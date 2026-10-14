@@ -1,8 +1,10 @@
+import json
 import os
 from typing import Any
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from pydantic import BaseModel
 
 from models.base import BaseModelProvider
 
@@ -52,19 +54,61 @@ class DeepSeekProvider(BaseModelProvider):
             }
         )
 
+        # Normal text response
+        if response_schema is None:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+            )
+
+            return response.choices[0].message.content
+
+        # Structured response
+        schema = response_schema.model_json_schema()
+
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    "Return ONLY valid JSON matching this JSON schema:\n"
+                    f"{json.dumps(schema, indent=2)}"
+                ),
+            }
+        )
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            response_format={"type": "json_object"},
         )
 
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+
+        return response_schema.model_validate_json(content)
+
+from schemas.research_spec import ResearchSpec
     
 if __name__ == "__main__":
     model = DeepSeekProvider()
 
     response = model.generate(
-        prompt="What is reinforcement learning? Answer in one sentence.",
-        system_prompt="You are a concise AI research assistant.",
+        prompt="""
+        I want to research how reinforcement learning can help
+        a robotic arm learn to grasp previously unseen objects.
+
+        I want to perform the experiments in simulation.
+        """,
+        system_prompt="""
+        You are a research requirements analyst.
+
+        Analyze the researcher's idea and convert it into
+        a structured research specification.
+
+        Do not invent information.
+        Anything important that is missing should be placed
+        in the unknowns field.
+        """,
+        response_schema=ResearchSpec,
     )
 
     print(response)

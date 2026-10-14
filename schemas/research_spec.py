@@ -30,6 +30,14 @@ class ResearchSpec(BaseModel):
         default_factory=list,
         description="Constraints specified by the researcher."
     )
+    
+    requirements: list[str] = Field(
+    default_factory=list,
+    description=(
+        "Research-specific requirements or scope that must be preserved, "
+        "such as generalization conditions, target scenarios, or evaluation scope."
+    ),
+)
 
     unknowns: list[str] = Field(
         default_factory=list,
