@@ -168,6 +168,8 @@ if __name__ == "__main__":
         """
         I want to research how reinforcement learning can help
         a robotic arm learn to grasp previously unseen objects.
+        
+        i will run this in simulation mode
         """
     )
 
